@@ -98,7 +98,6 @@
         return Math.exp(-0.5 * (a * a + b * b));
     };
     const HZ = { z: 0, t: 0 };
-
     function params() {
         const dbzT = +sl.dbz.value, W = +sl.w.value, mot = +sl.m.value, rot = sl.rot.value === "1";
         const hook = [], Mx = sx + 10, My = sy - 17;
@@ -197,8 +196,7 @@
                 const base = (H.mx * sa + H.my * ca) * ce;
                 if (cl) {
                     F.V[k] = F.S[k] = (hs(i, j, 4) - 0.5) * 3; F.R[k] = 0.45 + 0.3 * hs(i, j, 6); F.K[k] = 0;
-                    continue;
-                }
+                    continue;                }
 
                 // vento na altura do feixe: movimento médio + saída de ar (decai com a altura) + vórtice de Rankine
                 let u = H.mx, v = H.my;
@@ -297,7 +295,6 @@
         cx.strokeStyle = "rgba(0,255,0,0.45)"; cx.lineWidth = 2 * dpr;
         cx.beginPath(); cx.moveTo(c, c); cx.lineTo(c + c * Math.cos(a), c + c * Math.sin(a)); cx.stroke();
     }
-
     /* ---------- alertas (regras do README, rotulados como simulados) ---------- */
     function alertas() {
         const dbz = +sl.dbz.value, w = +sl.w.value, mot = +sl.m.value, rot = sl.rot.value === "1";
@@ -377,4 +374,66 @@
         radarSel.addEventListener("change", () => setSite(radarSel.value));
     }
     const mapBtn = $("btn-mapa");
-    if (map
+    if (mapBtn && window.RadarMap) {
+        mapBtn.addEventListener("click", () => {
+            window.RadarMap.openPicker(site ? site[0] : "", setSite);
+        });
+    }
+
+    document.querySelectorAll(".btn-product").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const name = btn.dataset.p;
+            if (P[name]) setProduct(name);
+        });
+    });
+
+    [sl.dbz, sl.w, sl.m].forEach(input => input.addEventListener("input", refresh));
+    [sl.rot, ui.elev, ui.nyq, ui.dea].forEach(input => {
+        if (input) input.addEventListener("change", refresh);
+    });
+
+    const resetBtn = $("btn-reset");
+    if (resetBtn) resetBtn.addEventListener("click", () => {
+        sx = -90; sy = 10; sweep = 0; since = 0;
+        sl.dbz.value = 65;
+        sl.w.value = 40;
+        sl.m.value = 25;
+        sl.rot.value = "0";
+        ui.elev.value = "0.5";
+        ui.nyq.value = "58";
+        ui.dea.checked = false;
+        setProduct("dbz");
+        refresh();
+    });
+
+    if (radarSel && window.RADARS && window.RADARS.length) {
+        setSite(window.RADARS[0][0]);
+    }
+
+    function frame(now) {
+        const dt = Math.min(0.1, Math.max(0, (now - prevT) / 1000));
+        prevT = now;
+        since += dt;
+        sweep = (sweep + dt * 0.8) % TP;
+
+        // 1 segundo real representa 1 minuto de deslocamento no cenário sintético.
+        const speed = +sl.m.value;
+        sx += Math.sin(DIRTO) * speed * KMIN * dt;
+        sy += Math.cos(DIRTO) * speed * KMIN * dt;
+
+        if (since >= 0.8 || dirty) {
+            scan();
+            paint();
+            overlay();
+            since = 0;
+            dirty = false;
+        }
+        requestAnimationFrame(frame);
+    }
+
+    window.addEventListener("resize", fit);
+    document.addEventListener("radarmap", () => { dirty = true; });
+    fit();
+    refresh();
+    requestAnimationFrame(frame);
+})();
