@@ -108,8 +108,9 @@
         b.textContent = "ERRO: " + e.message + " (" + String(e.filename || "").split("/").pop() + ":" + e.lineno + ")";
         document.body.appendChild(b);
     });
+    </script>
 
-          <!-- MODAL DO MAPA-MÚNDI (usado pelo js/map.js) -->
+    <!-- MODAL DO MAPA-MÚNDI (usado pelo js/map.js) -->
     <div id="mapa-modal" hidden>
         <div class="modal-box">
             <div class="modal-head">
@@ -120,8 +121,7 @@
             <canvas id="sitemap"></canvas>
         </div>
     </div>
-      
-    </script>
+
     <script src="js/radars.js?v=3"></script>
     <script src="js/map.js?v=3"></script>
     <script src="js/app.js?v=3"></script>
