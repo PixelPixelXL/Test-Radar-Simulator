@@ -1,91 +1,129 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapa-Múndi de Radares NEXRAD</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #04080c;
-      color: #cfe9cf;
-      font-family: 'Courier New', monospace;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    #barra-topo {
-      padding: 12px 16px;
-      background: #0b131b;
-      border-bottom: 1px solid #1f3040;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      justify-content: space-between;
-    }
-    #sm-regions button {
-      background: #142230;
-      color: #00ff66;
-      border: 1px solid #2b455e;
-      padding: 6px 12px;
-      cursor: pointer;
-      font-family: inherit;
-      border-radius: 4px;
-    }
-    #sm-regions button:hover {
-      background: #1f354a;
-    }
-    #sm-label {
-      font-size: 14px;
-      color: #ffd23f;
-    }
-    #mapa-modal {
-      flex: 1;
-      display: flex;
-      width: 100%;
-    }
-    #sitemap {
-      width: 100%;
-      height: 100%;
-      display: block;
-      cursor: crosshair;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE RADAR - NEXRAD Simulator</title>
+    <link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
+    <div id="game-layout">
+        <!-- PAINEL LATERAL DE CONTROLES -->
+        <div id="controls">
+                        <h2>Radar &amp; Atmosfera</h2>
 
-  <div id="barra-topo">
-    <div id="sm-regions"></div>
-    <div id="sm-label">Carregando mapa-múndi...</div>
-    <button id="sm-close" style="display:none;">Fechar</button>
-  </div>
+            <div class="param">
+                <label for="se-radar">Estação NEXRAD:</label>
+                <div style="display:flex; gap:6px;">
+                    <select id="se-radar" style="flex:1;"></select>
+                    <button id="btn-mapa" type="button" title="Abrir Mapa-Múndi">🌍 Mapa</button>
+                </div>
+            </div>
 
-  <div id="mapa-modal">
-    <canvas id="sitemap"></canvas>
-  </div>
+            <div class="param">
+                <label for="sl-vento">Velocidade do Vento: <b id="lbl-vento">40</b> mph</label>
+                <input type="range" id="sl-vento" min="0" max="120" value="40">
+            </div>
 
-  <!-- Carrega os seus dois arquivos -->
-  <script src="radars.js"></script>
-  <script src="map.js"></script>
+            <div class="param">
+                <label for="sl-desloc">Deslocamento do Sistema: <b id="lbl-desloc">25</b> mph</label>
+                <input type="range" id="sl-desloc" min="5" max="65" value="25">
+            </div>
 
-  <!-- Inicia o mapa-múndi automaticamente -->
-  <script>
-    window.addEventListener("load", () => {
-      let radarAtual = "KBOX"; // Radar inicial de exemplo
+            <div class="param">
+                <label for="se-couplet">Velocity Couplet (Rotação):</label>
+                <select id="se-couplet">
+                    <option value="0">Ausente</option>
+                    <option value="1">Presente (Rotação Forte)</option>
+                </select>
+            </div>
 
-      function abrirMapa() {
-        window.RadarMap.openPicker(radarAtual, (codigoEscolhido) => {
-          radarAtual = codigoEscolhido;
-          alert("Radar selecionado: " + codigoEscolhido);
-          abrirMapa(); // Mantém o mapa aberto após o clique
-        });
-      }
+            <div class="param">
+                <label for="se-elev">Elevação do feixe:</label>
+                <select id="se-elev">
+                    <option value="0.5" selected>0,5°</option><option value="0.9">0,9°</option>
+                    <option value="1.3">1,3°</option><option value="1.8">1,8°</option>
+                    <option value="2.4">2,4°</option><option value="3.1">3,1°</option>
+                    <option value="4">4,0°</option><option value="5.1">5,1°</option>
+                    <option value="6.4">6,4°</option><option value="8">8,0°</option>
+                    <option value="10">10,0°</option><option value="12.5">12,5°</option>
+                    <option value="15.6">15,6°</option><option value="19.5">19,5°</option>
+                </select>
+            </div>
 
-      abrirMapa();
-      window.addEventListener("resize", abrirMapa);
+            <div class="param">
+                <label for="se-nyquist">Velocidade de Nyquist (afeta V):</label>
+                <select id="se-nyquist">
+                    <option value="35">±35 mph (15,6 m/s)</option>
+                    <option value="45">±45 mph (20 m/s)</option>
+                    <option value="58" selected>±58 mph (26 m/s)</option>
+                    <option value="70">±70 mph (31 m/s)</option>
+                </select>
+                <label class="chk"><input type="checkbox" id="ck-dealias"> Desdobrar velocidade (dealias)</label>
+            </div>
+
+            <!-- SELETORES DE PRODUTO DO RADAR -->
+            <div class="param">
+                <label>Selecionar Produto:</label>
+                <div id="products">
+                    <button id="btn-dbz" class="btn-product active" data-p="dbz" title="Refletividade">Z (dBZ)</button>
+                    <button id="btn-vento" class="btn-product" data-p="vento" title="Velocidade base">V (Vel)</button>
+                    <button id="btn-srv" class="btn-product" data-p="srv" title="Velocidade relativa à tempestade">SRV</button>
+                    <button id="btn-cc" class="btn-product" data-p="cc" title="Coeficiente de correlação">CC</button>
+                    <button id="btn-kdp" class="btn-product" data-p="kdp" title="Fase diferencial específica">KDP</button>
+                    <button id="btn-et" class="btn-product" data-p="et" title="Topos de eco">ET</button>
+                    <button id="btn-vil" class="btn-product" data-p="vil" title="Líquido integrado na vertical">VIL</button>
+                    <button id="btn-vild" class="btn-product" data-p="vild" title="Densidade de VIL">VIL-D</button>
+                </div>
+            </div>
+
+            <button id="btn-reset" type="button">↻ Reiniciar tempestade</button>
+
+            <div id="alerts-box">
+                <h3>Alertas Ativos</h3>
+                <div id="alerts-list">Monitorando atmosfera...</div>
+            </div>
+        </div>
+
+        <!-- TELA ÚNICA DO RADAR -->
+        <div id="visuals">
+            <div class="screen">
+                <h3 id="radar-title">Display Principal: Refletividade (dBZ)</h3>
+                <div id="wrap">
+                    <canvas id="radarCanvas"></canvas>
+                    <div id="readout" hidden></div>
+                </div>
+                <canvas id="legend"></canvas>
+                <div id="stats"></div>
+                <p class="note">THE-RADAR v3. Todos os campos (Z, V, CC, KDP, ET, VIL e VIL-D) são sintéticos. Varredura polar com geometria de feixe. Passe o mouse sobre o radar para ler o valor. Alertas inspirados em critérios do NWS, simplificados para o jogo.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /* mostra na tela qualquer erro de JavaScript (útil quando não há console aberto) */
+    window.addEventListener("error", function (e) {
+        var b = document.createElement("pre");
+        b.style.cssText = "position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px;background:#7f1d1d;color:#fff;font:12px monospace;z-index:99;white-space:pre-wrap";
+        b.textContent = "ERRO: " + e.message + " (" + String(e.filename || "").split("/").pop() + ":" + e.lineno + ")";
+        document.body.appendChild(b);
     });
-  </script>
+
+          <!-- MODAL DO MAPA-MÚNDI (usado pelo js/map.js) -->
+    <div id="mapa-modal" hidden>
+        <div class="modal-box">
+            <div class="modal-head">
+                <div id="sm-regions"></div>
+                <button id="sm-close" type="button">Fechar [ESC]</button>
+            </div>
+            <div id="sm-label"></div>
+            <canvas id="sitemap"></canvas>
+        </div>
+    </div>
+      
+    </script>
+    <script src="js/radars.js?v=3"></script>
+    <script src="js/map.js?v=3"></script>
+    <script src="js/app.js?v=3"></script>
 </body>
 </html>
